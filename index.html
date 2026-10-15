@@ -13,6 +13,7 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
 header{padding:16px 16px 4px;display:flex;justify-content:space-between;align-items:center}
+#couple{font:600 15px Georgia,"Times New Roman",serif;color:var(--ac);margin-top:2px}
 h1{font:600 22px Georgia,"Times New Roman",serif;margin:0}
 #sync{font-size:12px;color:var(--mu)}
 nav{display:flex;gap:6px;overflow-x:auto;padding:8px 16px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
@@ -45,7 +46,7 @@ button.tg.on{background:var(--ac2);color:var(--ac);border-color:var(--ac)}
 </style>
 </head>
 <body>
-<header><h1>💍 Wedding Planner</h1><span id="sync">memuat…</span></header>
+<header><div><h1>💍 Wedding Planner</h1><div id="couple"></div></div><span id="sync">memuat…</span></header>
 <nav id="nav"></nav>
 <main id="app"></main>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -60,7 +61,7 @@ const FIREBASE_CONFIG={
   appId:"1:34601970530:web:6fe3a1c1eff32926fcda3b"
 };
 // Kode ruang: tambahkan #kodemu di akhir link (mis. .../index.html#budi-sari) agar tiap pasangan punya data sendiri.
-const ROOM=(location.hash.slice(1)||'main').replace(/[.#$\[\]\/]/g,'-');
+const ROOM=(location.hash.slice(1)||'main').toLowerCase().replace(/[.#$\[\]\/]/g,'-');
 </script>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -117,6 +118,13 @@ if(b==='date')S.date=x;else if(b==='target')plan().target=+x||0;else if(b==='pai
 document.addEventListener('focusout',()=>{if(pending){pending=false;setTimeout(render,50)}});
 function load(j){try{const o=JSON.parse(j);if(o&&o.plans)S=o}catch(e){}}
 try{const j=localStorage.getItem('wp-'+ROOM);if(j){load(j);last=j}}catch(e){}
+const NAMES=(()=>{let h='';try{h=decodeURIComponent(location.hash.slice(1))}catch(e){}
+let p=h.split(/-dan-|-and-|&/i);if(p.length<2)p=h.split('-');
+if(p.length<2||!p[0].trim()||!p[1].trim())return '';
+const f=t=>t.replace(/[_-]+/g,' ').trim().replace(/(^|\s)\S/g,c=>c.toUpperCase());
+return f(p[0])+' & '+f(p.slice(1).join(' '))})();
+if(NAMES){$('#couple').textContent=NAMES;document.title=NAMES+' · Wedding Planner'}
+addEventListener('hashchange',()=>location.reload());
 render();
 (async()=>{try{if(typeof firebase==='undefined'||FIREBASE_CONFIG.apiKey.startsWith('ISI')){sync('mode lokal (Firebase belum diisi)');return}
 firebase.initializeApp(FIREBASE_CONFIG);
