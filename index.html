@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wedding Planner</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#fbf6f3;--card:#fff;--tx:#3a2e2e;--mu:#8b7a78;--ac:#b5586b;--ac2:#f6e3e7;--ok:#4f8a6a;--bd:#eadbd7;--warn:#c0793a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#1d1719;--card:#2a2124;--tx:#f3e9e7;--mu:#b4a09d;--ac:#e08a9c;--ac2:#41292f;--ok:#7cc79e;--bd:#3d3034;--warn:#e0a060}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#1d1719;--card:#2a2124;--tx:#f3e9e7;--mu:#b4a09d;--ac:#e08a9c;--ac2:#41292f;--ok:#7cc79e;--bd:#3d3034;--warn:#e0a060}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+header{padding:16px 16px 4px;display:flex;justify-content:space-between;align-items:center}
+h1{font:600 22px Georgia,"Times New Roman",serif;margin:0}
+#sync{font-size:12px;color:var(--mu)}
+nav{display:flex;gap:6px;overflow-x:auto;padding:8px 16px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
+nav button{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:20px;padding:7px 13px;font:inherit;font-size:13px;cursor:pointer}
+nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+main{max-width:760px;margin:0 auto;padding:8px 16px 40px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:15px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--ac2);border-radius:12px;padding:12px}
+.stat b{display:block;font-size:20px}.stat span{font-size:12px;color:var(--mu)}
+.big{font:600 44px Georgia,serif;color:var(--ac);line-height:1}
+.bar{height:9px;background:var(--ac2);border-radius:6px;overflow:hidden;margin:8px 0 4px}
+.bar i{display:block;height:100%;background:var(--ac)}
+.row{display:flex;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--bd)}
+.row:first-of-type{border-top:0}
+.row .m{flex:1;min-width:0}.row small{color:var(--mu);display:block}
+.done .t{text-decoration:line-through;color:var(--mu)}
+form,.add{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+input,select{font:inherit;font-size:14px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:9px;padding:8px;min-width:0;flex:1 1 110px}
+button.p{background:var(--ac);color:#fff;border:0;border-radius:9px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer;flex:none}
+button.x{background:none;border:0;color:var(--mu);cursor:pointer;font-size:16px;padding:4px 8px}
+button.tg{background:none;border:1px solid var(--bd);border-radius:14px;color:var(--mu);cursor:pointer;font-size:12px;padding:3px 9px}
+button.tg.on{background:var(--ac2);color:var(--ac);border-color:var(--ac)}
+.tag{font-size:11px;background:var(--ac2);color:var(--ac);border-radius:8px;padding:1px 7px}
+.ok{color:var(--ok)}.bad{color:var(--warn)}
+.sw{display:flex;gap:6px;margin-bottom:10px}.sw button{flex:1;border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:10px;padding:9px;font:inherit;cursor:pointer}.sw .on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.empty{color:var(--mu);font-size:13px;padding:6px 0}
+.sc{overflow-x:auto}
+</style>
+</head>
+<body>
+<header><h1>💍 Wedding Planner</h1><span id="sync">memuat…</span></header>
+<nav id="nav"></nav>
+<main id="app"></main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+// === ISI DENGAN KONFIGURASI FIREBASE KAMU (Project settings > Your apps > Web app) ===
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyDbtkR3ymIeCujvhdo1rKDF2ki7F_GGTCs",
+  authDomain:"wedding-planner-byswipi.firebaseapp.com",
+  databaseURL:"https://wedding-planner-byswipi-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"wedding-planner-byswipi",
+  appId:"1:34601970530:web:6fe3a1c1eff32926fcda3b"
+};
+// Kode ruang: tambahkan #kodemu di akhir link (mis. .../index.html#budi-sari) agar tiap pasangan punya data sendiri.
+const ROOM=(location.hash.slice(1)||'main').replace(/[.#$\[\]\/]/g,'-');
+</script>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rp=n=>'Rp '+Math.round(+n||0).toLocaleString('id-ID'),uid=()=>Math.random().toString(36).slice(2,9),v=id=>{const e=document.getElementById(id);return e?e.value.trim():''};
+const starters=['Tentukan tanggal & total budget','Diskusi konsep & jumlah tamu','Survei & booking venue','Pilih WO / vendor utama','Susun daftar tamu CPP & CPW','Fitting busana & cincin','Cetak / kirim undangan'];
+const def=()=>({date:'',plan:'A',plans:{A:{target:0,items:[]},B:{target:0,items:[]},C:{target:0,items:[]}},savings:[],vendors:[],guests:[],tasks:starters.map(t=>({id:uid(),t,due:'',who:'Bersama',done:false}))});
+let S=def(),tab='dash',gf='all',doc=null,last='',pending=false;
+const tabs=[['dash','🏠 Dashboard'],['task','📝 Checklist'],['bud','💰 Budget'],['ven','💐 Vendor'],['gst','👥 Tamu']];
+const sync=t=>{$('#sync').textContent=t};
+function save(){last=JSON.stringify(S);try{localStorage.setItem('wp-'+ROOM,last)}catch(e){}if(doc){doc.set({s:last}).then(()=>sync('● tersinkron')).catch(()=>sync('○ gagal sinkron (mode lokal)'))}render()}
+const sum=(a,k)=>a.reduce((x,i)=>x+(+i[k]||0),0);
+const plan=()=>S.plans[S.plan];
+function dash(){const d=S.tasks.filter(t=>t.done).length,n=S.tasks.length,pc=n?Math.round(d/n*100):0;
+let days='—';if(S.date){days=Math.ceil((new Date(S.date+'T00:00')-new Date().setHours(0,0,0,0))/864e5);if(days<0)days='Sudah lewat';else if(days===0)days='Hari H!'}
+const it=plan().items,est=sum(it,'est'),paid=sum(it,'paid'),pax=sum(S.guests,'pax');
+const up=S.tasks.filter(t=>!t.done).sort((a,b)=>(a.due||'9')>(b.due||'9')?1:-1).slice(0,5);
+return `<div class="card"><h2>Countdown</h2><div class="big">${esc(days)}${typeof days==='number'?'<small style="font-size:16px;color:var(--mu)"> hari lagi</small>':''}</div><div class="add" style="margin-top:12px"><input type="date" data-b="date" value="${esc(S.date)}" aria-label="Tanggal pernikahan"></div></div>
+<div class="card"><h2>Progres persiapan</h2><b>${pc}%</b> <span class="empty">(${d}/${n} tugas selesai)</span><div class="bar"><i style="width:${pc}%"></i></div></div>
+<div class="grid"><div class="stat"><b>${rp(est)}</b><span>Estimasi Plan ${S.plan}</span></div><div class="stat"><b>${rp(paid)}</b><span>Sudah dibayar</span></div><div class="stat"><b>${pax}</b><span>Total pax tamu</span></div><div class="stat"><b>${S.vendors.filter(x=>x.fav).length}/${S.vendors.length}</b><span>Vendor terpilih</span></div></div>
+<div class="card" style="margin-top:12px"><h2>Tugas terdekat</h2>${up.length?up.map(t=>`<div class="row"><div class="m">${esc(t.t)}<small>${esc(t.who)}${t.due?' · '+esc(t.due):''}</small></div></div>`).join(''):'<div class="empty">Semua tugas selesai 🎉</div>'}</div>`}
+function task(){const ts=[...S.tasks].sort((a,b)=>a.done-b.done||((a.due||'9')>(b.due||'9')?1:-1));
+return `<div class="card"><h2>Tambah tugas</h2><div class="add"><input id="tt" placeholder="Nama tugas"><input id="td" type="date"><select id="tw"><option>Bersama</option><option>CPP</option><option>CPW</option></select><button class="p" data-act="addTask">Tambah</button></div></div>
+<div class="card"><h2>Daftar tugas & timeline</h2>${ts.map(t=>`<div class="row ${t.done?'done':''}"><input type="checkbox" style="flex:none" ${t.done?'checked':''} data-act="tg" data-l="tasks" data-k="done" data-id="${t.id}"><div class="m"><span class="t">${esc(t.t)}</span><small>${t.due?'Deadline '+esc(t.due)+' · ':''}<span class="tag">${esc(t.who)}</span></small></div><button class="x" data-act="del" data-l="tasks" data-id="${t.id}">✕</button></div>`).join('')||'<div class="empty">Belum ada tugas.</div>'}</div>`}
+function bud(){const p=plan(),est=sum(p.items,'est'),paid=sum(p.items,'paid'),sv=sum(S.savings,'amt'),gap=sv-est;
+return `<div class="sw">${['A','B','C'].map(k=>`<button class="${S.plan===k?'on':''}" data-act="plan" data-p="${k}">Plan ${k}</button>`).join('')}</div>
+<div class="card"><h2>Ringkasan Plan ${S.plan}</h2><div class="add"><input type="number" data-b="target" placeholder="Target budget (Rp)" value="${p.target||''}"></div>
+<div class="grid"><div class="stat"><b>${rp(est)}</b><span>Total estimasi</span></div><div class="stat"><b>${rp(paid)}</b><span>Sudah dibayar</span></div><div class="stat"><b class="${p.target&&est>p.target?'bad':'ok'}">${p.target?rp(p.target-est):'—'}</b><span>Sisa dari target</span></div><div class="stat"><b class="${gap>=0?'ok':'bad'}">${rp(gap)}</b><span>Tabungan vs estimasi</span></div></div></div>
+<div class="card"><h2>Pos pengeluaran</h2><div class="add"><input id="in" placeholder="Pos (mis. Katering)"><input id="ie" type="number" placeholder="Estimasi"><input id="ip" type="number" placeholder="Dibayar"><button class="p" data-act="addItem">Tambah</button></div>
+${p.items.map(i=>`<div class="row"><div class="m">${esc(i.n)}<small>Estimasi ${rp(i.est)} · ${+i.paid>=+i.est&&i.est?'<span class="ok">Lunas</span>':'Sisa '+rp(i.est-i.paid)}</small></div><input type="number" style="max-width:110px;flex:none" data-b="paid" data-id="${i.id}" value="${i.paid||0}" aria-label="Dibayar"><button class="x" data-act="del" data-l="items" data-id="${i.id}">✕</button></div>`).join('')||'<div class="empty">Belum ada pos di Plan '+S.plan+'.</div>'}</div>
+<div class="card"><h2>Tabungan · ${rp(sv)}</h2><div class="add"><input id="sn" placeholder="Sumber (mis. Tabungan CPP)"><input id="sa" type="number" placeholder="Jumlah"><button class="p" data-act="addSave">Catat</button></div>
+${S.savings.map(s=>`<div class="row"><div class="m">${esc(s.n)}</div><b>${rp(s.amt)}</b><button class="x" data-act="del" data-l="savings" data-id="${s.id}">✕</button></div>`).join('')}</div>`}
+const cats=['Venue','Katering','Dekorasi','MUA & Busana','Foto & Video','Hiburan','Undangan','Lainnya'];
+function ven(){const g={};S.vendors.forEach(x=>(g[x.cat]=g[x.cat]||[]).push(x));
+return `<div class="card"><h2>Tambah vendor</h2><div class="add"><select id="vc">${cats.map(c=>`<option>${c}</option>`).join('')}</select><input id="vn" placeholder="Nama vendor"><input id="vp" placeholder="Detail paket"><input id="vh" type="number" placeholder="Harga (Rp)"><button class="p" data-act="addVen">Simpan</button></div></div>
+${Object.keys(g).map(c=>{const min=Math.min(...g[c].map(x=>+x.price||0));return `<div class="card"><h2>${esc(c)}</h2>${g[c].map(x=>`<div class="row"><div class="m"><b>${esc(x.name)}</b> ${g[c].length>1&&+x.price===min?'<span class="tag">termurah</span>':''}<small>${esc(x.pkg)}</small><b>${rp(x.price)}</b></div><button class="tg ${x.fav?'on':''}" data-act="tg" data-l="vendors" data-k="fav" data-id="${x.id}">${x.fav?'✓ Dipilih':'Pilih'}</button><button class="x" data-act="del" data-l="vendors" data-id="${x.id}">✕</button></div>`).join('')}</div>`}).join('')||'<div class="empty">Belum ada vendor tersimpan.</div>'}`}
+function gst(){const f=S.guests.filter(x=>gf==='all'||(gf==='VIP'?x.vip:x.side===gf)),px=s=>sum(S.guests.filter(x=>x.side===s),'pax');
+return `<div class="grid"><div class="stat"><b>${px('CPP')}</b><span>Pax CPP</span></div><div class="stat"><b>${px('CPW')}</b><span>Pax CPW</span></div></div>
+<div class="card" style="margin-top:12px"><h2>Tambah tamu</h2><div class="add"><input id="gn" placeholder="Nama tamu / keluarga"><select id="gs"><option>CPP</option><option>CPW</option></select><input id="gp" type="number" min="1" value="1" style="max-width:80px" aria-label="Pax"><button class="p" data-act="addGst">Tambah</button></div></div>
+<div class="sw">${['all','CPP','CPW','VIP'].map(k=>`<button class="${gf===k?'on':''}" data-act="gf" data-p="${k}">${k==='all'?'Semua':k}</button>`).join('')}</div>
+<div class="card">${f.map(x=>`<div class="row"><div class="m">${esc(x.n)}<small><span class="tag">${x.side}</span> ${x.pax} pax</small></div><button class="tg ${x.vip?'on':''}" data-act="tg" data-l="guests" data-k="vip" data-id="${x.id}">★ VIP</button><button class="x" data-act="del" data-l="guests" data-id="${x.id}">✕</button></div>`).join('')||'<div class="empty">Belum ada tamu.</div>'}</div>`}
+function render(){const a=$('#app'),y=scrollY;$('#nav').innerHTML=tabs.map(([k,l])=>`<button class="${tab===k?'on':''}" data-act="tab" data-p="${k}">${l}</button>`).join('');a.innerHTML={dash,task,bud,ven,gst}[tab]();scrollTo(0,y)}
+const A={
+tab(e){tab=e.p;render()},plan(e){S.plan=e.p;save()},gf(e){gf=e.p;render()},
+addTask(){const t=v('tt');if(!t)return;S.tasks.push({id:uid(),t,due:v('td'),who:v('tw'),done:false});save()},
+addItem(){const n=v('in');if(!n)return;plan().items.push({id:uid(),n,est:+v('ie')||0,paid:+v('ip')||0});save()},
+addSave(){const n=v('sn');if(!n)return;S.savings.push({id:uid(),n,amt:+v('sa')||0});save()},
+addVen(){const n=v('vn');if(!n)return;S.vendors.push({id:uid(),cat:v('vc'),name:n,pkg:v('vp'),price:+v('vh')||0,fav:false});save()},
+addGst(){const n=v('gn');if(!n)return;S.guests.push({id:uid(),n,side:v('gs'),pax:Math.max(1,+v('gp')||1),vip:false});save()},
+tg(e){const o=S[e.l].find(x=>x.id===e.id);if(o){o[e.k]=!o[e.k];save()}},
+del(e){const L=e.l==='items'?plan().items:S[e.l],i=L.findIndex(x=>x.id===e.id);if(i>-1){L.splice(i,1);save()}}};
+document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');if(b&&A[b.dataset.act])A[b.dataset.act](b.dataset)});
+document.addEventListener('change',ev=>{const b=ev.target.dataset.b;if(!b)return;const x=ev.target.value;
+if(b==='date')S.date=x;else if(b==='target')plan().target=+x||0;else if(b==='paid'){const o=plan().items.find(i=>i.id===ev.target.dataset.id);if(o)o.paid=+x||0}save()});
+document.addEventListener('focusout',()=>{if(pending){pending=false;setTimeout(render,50)}});
+function load(j){try{const o=JSON.parse(j);if(o&&o.plans)S=o}catch(e){}}
+try{const j=localStorage.getItem('wp-'+ROOM);if(j){load(j);last=j}}catch(e){}
+render();
+(async()=>{try{if(typeof firebase==='undefined'||FIREBASE_CONFIG.apiKey.startsWith('ISI')){sync('mode lokal (Firebase belum diisi)');return}
+firebase.initializeApp(FIREBASE_CONFIG);
+const ref=firebase.database().ref('wedding/'+ROOM);
+doc={set:d=>ref.set(d),onSnapshot:(next,err)=>ref.on('value',x=>next({exists:x.exists(),data:()=>x.val()||{}}),e=>err&&err(e))};
+sync('● menyambung…');
+doc.onSnapshot(s=>{sync('● tersinkron');if(!s.exists){return}const j=s.data().s;if(j&&j!==last){last=j;load(j);const f=document.activeElement;if(f&&/INPUT|SELECT/.test(f.tagName)&&f.value)pending=true;else render()}},()=>sync('○ mode lokal'))}catch(e){sync('mode lokal')}})();
+</script>
+</body>
+</html>
