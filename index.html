@@ -50,13 +50,15 @@ button.tg.on{background:var(--ac2);color:var(--ac);border-color:var(--ac)}
 .gh{width:100%;display:flex;justify-content:space-between;align-items:center;background:none;border:0;color:var(--tx);font:inherit;padding:0;cursor:pointer;text-align:left}.gh small{color:var(--mu);margin-left:6px}
 table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid var(--bd);padding:6px 8px;text-align:left;vertical-align:top}th{background:var(--ac2)}
 .nt{width:100%;margin-top:4px;flex:none;font-size:13px}.bt{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:150px}
+.locked nav,.locked main{display:none}#lock{max-width:420px;margin:12px auto;padding:0 16px}
 .empty{color:var(--mu);font-size:13px;padding:6px 0}
 .sc{overflow-x:auto}
 </style>
 </head>
 <body>
-<header><div><h1>💍 Wedding Planner</h1><div id="couple"></div></div><span id="sync">memuat…</span></header>
+<header><div><h1>💍 Wedding Planner</h1><div id="couple"></div></div><span><button id="out" class="tg" data-act="out" hidden>Keluar</button> <span id="sync">memuat…</span></span></header>
 <nav id="nav"></nav>
+<section id="lock" hidden></section>
 <main id="app"></main>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -71,17 +73,18 @@ const FIREBASE_CONFIG={
 };
 // Kode ruang: tambahkan #kodemu di akhir link (mis. .../index.html#budi-sari) agar tiap pasangan punya data sendiri.
 const RAW=(()=>{let r='';try{r=decodeURIComponent(location.hash.slice(1))}catch(e){}return r})();
-const ROOM=(RAW||'main').toLowerCase().replace(/[.#$\[\]\/]/g,'-');
+let ROOM='main';const norm=s=>String(s||'').toLowerCase().trim().replace(/[.#$\[\]\/\s]+/g,'-');
+const CLOUD=typeof firebase!=='undefined'&&!FIREBASE_CONFIG.apiKey.startsWith('ISI');
 </script>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rp=n=>'Rp '+Math.round(+n||0).toLocaleString('id-ID'),uid=()=>Math.random().toString(36).slice(2,9),v=id=>{const e=document.getElementById(id);return e?e.value.trim():''};
 const starters=['Tentukan tanggal & total budget','Diskusi konsep & jumlah tamu','Survei & booking venue','Pilih WO / vendor utama','Susun daftar tamu CPP & CPW','Fitting busana & cincin','Cetak / kirim undangan'];
 const def=()=>({date:'',plan:'A',plans:{A:{target:0,items:[]},B:{target:0,items:[]},C:{target:0,items:[]}},savings:[],vendors:[],guests:[],ses:[],tasks:starters.map(t=>({id:uid(),t,due:'',who:'Bersama',done:false}))});
-let S=def(),tab='dash',gf='all',vf='all',cmp=[],op={CPP:true,CPW:true},doc=null,last='',pending=false;
+let S=def(),tab='dash',gf='all',vf='all',cmp=[],op={CPP:true,CPW:true},REF=null,last='',pending=false;
 const tabs=[['dash','🏠 Dashboard'],['task','📝 Checklist'],['bud','💰 Budget'],['ven','💐 Vendor'],['gst','👥 Tamu'],['ses','🎁 Seserahan']];
 const sync=t=>{$('#sync').textContent=t};
-function save(){last=JSON.stringify(S);try{localStorage.setItem('wp-'+ROOM,last)}catch(e){}if(doc){doc.set({s:last}).then(()=>sync('● tersinkron')).catch(()=>sync('○ gagal sinkron (mode lokal)'))}render()}
+function save(){last=JSON.stringify(S);if(!CLOUD){try{localStorage.setItem('wp-local',last)}catch(e){}}else if(REF){const L=last;seal(L).then(c=>REF.set({s:c})).then(()=>sync('● tersinkron')).catch(()=>sync('○ gagal sinkron'))}render()}
 const sum=(a,k)=>a.reduce((x,i)=>x+(+i[k]||0),0);
 const plan=()=>S.plans[S.plan];
 function dash(){
@@ -150,6 +153,7 @@ tpl(){if(!S.date)return;const b=new Date(S.date+'T00:00');TPL.forEach(([d,t])=>{
 cmp(e){const i=cmp.indexOf(e.id);if(i>-1)cmp.splice(i,1);else{cmp.push(e.id);if(cmp.length>3)cmp.shift()}render()},cmpx(){cmp=[];render()},
 addSes(){const n=v('sn2');if(!n)return;S.ses.push({id:uid(),cat:v('sc'),n,price:+v('sp')||0,done:false});save()},
 tplSes(){[['Mahar','Mahar (uang / emas)'],['Seserahan','Alat sholat'],['Seserahan','Perhiasan'],['Seserahan','Busana'],['Seserahan','Sepatu & tas'],['Seserahan','Skincare & kosmetik'],['Hantaran lain','Kue & makanan'],['Hantaran lain','Buah-buahan']].forEach(([cat,n])=>S.ses.push({id:uid(),cat,n,price:0,done:false}));save()},
+mode(e){mode=e.p;renderLock()},go(){return goLogin()},out(){logout()},
 tg(e){const o=S[e.l].find(x=>x.id===e.id);if(o){o[e.k]=!o[e.k];save()}},
 del(e){const L=e.l==='items'?plan().items:S[e.l],i=L.findIndex(x=>x.id===e.id);if(i>-1){L.splice(i,1);save()}}};
 document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');if(b&&A[b.dataset.act])A[b.dataset.act](b.dataset)});
@@ -157,21 +161,50 @@ document.addEventListener('change',ev=>{const b=ev.target.dataset.b;if(!b)return
 if(b==='date')S.date=x;else if(b==='target')plan().target=+x||0;else if(b==='vnote'){const o=S.vendors.find(i=>i.id===ev.target.dataset.id);if(o)o.note=x}else if(b==='paid'){const o=plan().items.find(i=>i.id===ev.target.dataset.id);if(o)o.paid=+x||0}save()});
 document.addEventListener('focusout',()=>{if(pending){pending=false;setTimeout(render,50)}});
 function load(j){try{const o=JSON.parse(j);if(o&&o.plans)S=Object.assign(def(),o)}catch(e){}}
-try{const j=localStorage.getItem('wp-'+ROOM);if(j){load(j);last=j}}catch(e){}
-const NAMES=(()=>{let h=RAW;
-let p=h.split(/-dan-|-and-|&/i);if(p.length<2)p=h.split('-');
-if(p.length<2||!p[0].trim()||!p[1].trim())return '';
-const f=t=>t.replace(/[_-]+/g,' ').trim().replace(/(^|\s)\S/g,c=>c.toUpperCase());
-return f(p[0])+' & '+f(p.slice(1).join(' '))})();
-if(NAMES){$('#couple').textContent=NAMES;document.title=NAMES+' · Wedding Planner'}
+if(!CLOUD)try{const j=localStorage.getItem('wp-local');if(j){load(j);last=j}}catch(e){}
+const nm=h=>{let p=h.split(/-dan-|-and-|&/i);if(p.length<2)p=h.split('-');if(p.length<2||!p[0].trim()||!p[1].trim())return '';const f=t=>t.replace(/[_-]+/g,' ').trim().replace(/(^|\s)\S/g,c=>c.toUpperCase());return f(p[0])+' & '+f(p.slice(1).join(' '))};
+const setNames=r=>{const n=nm(r||'');$('#couple').textContent=n;document.title=n?n+' · Wedding Planner':'Wedding Planner'};
 addEventListener('hashchange',()=>location.reload());
 render();
-(async()=>{try{if(typeof firebase==='undefined'||FIREBASE_CONFIG.apiKey.startsWith('ISI')){sync('mode lokal (Firebase belum diisi)');return}
-firebase.initializeApp(FIREBASE_CONFIG);
-const ref=firebase.database().ref('wedding/'+ROOM);
-doc={set:d=>ref.set(d),onSnapshot:(next,err)=>ref.on('value',x=>next({exists:x.exists(),data:()=>x.val()||{}}),e=>err&&err(e))};
-sync('● menyambung…');
-doc.onSnapshot(s=>{sync('● tersinkron');if(!s.exists){return}const j=s.data().s;if(j&&j!==last){last=j;load(j);const f=document.activeElement;if(f&&/INPUT|SELECT/.test(f.tagName)&&f.value)pending=true;else render()}},()=>sync('○ mode lokal'))}catch(e){sync('mode lokal')}})();
+const enc=new TextEncoder(),dec=new TextDecoder();
+const b64=u=>{let t='';for(let i=0;i<u.length;i+=8192)t+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(t)};
+const unb64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
+const hex=u=>[...u].map(x=>x.toString(16).padStart(2,'0')).join('');
+let mode='in',lr=RAW,SESS=null,CK=null;
+async function derive(room,pw){const km=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits']);const bits=new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:enc.encode('wp1:'+room),iterations:200000},km,512));return{id:hex(bits.slice(0,32)),key:bits.slice(32)}}
+const aesKey=raw=>crypto.subtle.importKey('raw',raw,'AES-GCM',false,['encrypt','decrypt']);
+async function seal(txt){const iv=crypto.getRandomValues(new Uint8Array(12)),c=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},CK,enc.encode(txt))),o=new Uint8Array(12+c.length);o.set(iv);o.set(c,12);return b64(o)}
+async function unseal(t){const b=unb64(t);return dec.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(0,12)},CK,b.slice(12)))}
+function renderLock(msg){const el=document.getElementById('lr');if(el)lr=el.value;const nw=mode==='new';$('#lock').hidden=false;document.body.classList.add('locked');
+$('#lock').innerHTML=`<div class="card"><h2>${nw?'Buat ruang baru':'Masuk ke ruang'}</h2><div class="sw"><button class="${nw?'':'on'}" data-act="mode" data-p="in">Masuk</button><button class="${nw?'on':''}" data-act="mode" data-p="new">Buat ruang baru</button></div>
+<div style="display:grid;gap:8px"><input id="lr" placeholder="Kode ruang (mis. sefia-abizar)" value="${esc(lr)}" autocomplete="off" autocapitalize="none"><input id="lp" type="password" placeholder="Password (min. 8 karakter)" autocomplete="${nw?'new-password':'current-password'}">${nw?'<input id="lp2" type="password" placeholder="Ulangi password" autocomplete="new-password">':''}</div>
+<label class="empty" style="display:block;margin-top:8px"><input id="rem" type="checkbox" style="width:auto;padding:0;vertical-align:middle" checked> Ingat di perangkat ini</label>
+<div id="lm" class="bad" style="min-height:20px;margin:6px 0">${esc(msg||'')}</div><button class="p" data-act="go" style="width:100%">${nw?'Buat ruang':'Masuk'}</button>
+<p class="empty" style="margin-top:10px">Data dienkripsi di perangkatmu sebelum disimpan. <b>Jika password lupa, data tidak bisa dipulihkan.</b> Pasangan masuk dengan kode ruang dan password yang sama.</p></div>`}
+const lmsg=t=>{const e=document.getElementById('lm');if(e)e.textContent=t};
+async function goLogin(){const room=norm(v('lr')),pw=document.getElementById('lp').value,nw=mode==='new';lr=v('lr');
+if(!room)return lmsg('Isi kode ruang.');if(pw.length<8)return lmsg('Password minimal 8 karakter.');
+if(nw&&pw!==document.getElementById('lp2').value)return lmsg('Ulangi password tidak sama.');
+lmsg('Memproses…');
+try{const d=await derive(room,pw);CK=await aesKey(d.key);const ref=firebase.database().ref('wedding/'+room+'/'+d.id),snap=await ref.once('value');
+if(nw){if(snap.exists())return lmsg('Ruang ini sudah ada. Silakan masuk.');ROOM=room;S=def();last='';enter({room,id:d.id,key:d.key},ref,true)}
+else{if(!snap.exists())return lmsg('Kode ruang atau password salah.');let txt;try{txt=await unseal(snap.val().s)}catch(e){return lmsg('Kode ruang atau password salah.')}ROOM=room;load(txt);last=txt;enter({room,id:d.id,key:d.key},ref,false)}}
+catch(e){lmsg(e&&e.code==='PERMISSION_DENIED'?'Akses ditolak: Rules Firebase belum diperbarui.':'Gagal terhubung. Cek koneksi internet.')}}
+function enter(sess,ref,isNew){SESS=sess;REF=ref;const r=document.getElementById('rem');if(r&&r.checked)try{localStorage.setItem('wp-sess',JSON.stringify({room:sess.room,id:sess.id,key:b64(sess.key)}))}catch(e){}
+$('#lock').hidden=true;document.body.classList.remove('locked');$('#out').hidden=false;setNames(sess.room);sync('● menyambung…');
+REF.on('value',async x=>{sync('● tersinkron');if(!x.exists())return;try{const j=await unseal(x.val().s);if(j&&j!==last){last=j;load(j);const f=document.activeElement;if(f&&/INPUT|SELECT/.test(f.tagName)&&f.value)pending=true;else render()}}catch(e){}},()=>sync('○ koneksi terputus'));
+if(isNew)save();else render()}
+function logout(){try{REF&&REF.off()}catch(e){}REF=null;SESS=null;CK=null;S=def();last='';tab='dash';try{localStorage.removeItem('wp-sess')}catch(e){}$('#out').hidden=true;setNames('');render();renderLock();sync('terkunci')}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('#lock').hidden&&/^(lr|lp|lp2)$/.test(e.target.id))goLogin()});
+(async()=>{if(!CLOUD){sync('mode lokal (Firebase belum diisi)');return}
+document.body.classList.add('locked');
+try{Object.keys(localStorage).filter(k=>/^wp-/.test(k)&&k!=='wp-sess').forEach(k=>localStorage.removeItem(k))}catch(e){}
+if(!(window.crypto&&crypto.subtle)){renderLock('Browser tidak mendukung enkripsi. Buka lewat https di browser terbaru.');return}
+try{firebase.initializeApp(FIREBASE_CONFIG)}catch(e){}
+let sv=null;try{sv=JSON.parse(localStorage.getItem('wp-sess')||'null')}catch(e){}
+const want=norm(RAW);
+if(sv&&sv.room&&(!want||want===sv.room)){try{const key=unb64(sv.key);CK=await aesKey(key);const ref=firebase.database().ref('wedding/'+sv.room+'/'+sv.id),snap=await ref.once('value');if(snap.exists()){const txt=await unseal(snap.val().s);ROOM=sv.room;load(txt);last=txt;enter({room:sv.room,id:sv.id,key},ref,false);return}}catch(e){}}
+renderLock();sync('terkunci')})();
 </script>
 </body>
 </html>
